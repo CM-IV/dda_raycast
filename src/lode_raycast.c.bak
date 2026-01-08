@@ -1,0 +1,179 @@
+#include "../include/raylib.h"
+#include "../include/raymath.h"
+#include <math.h>
+
+#define SCREEN_WIDTH 640
+#define SCREEN_HEIGHT 480
+#define TARGET_FPS 60
+#define MAP_WIDTH 24
+#define MAP_HEIGHT 24
+#define CELL_SIZE 20
+
+static int world_map[MAP_WIDTH][MAP_HEIGHT] = {
+  {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+  {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+  {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+  {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+  {1,0,0,0,0,0,2,2,2,2,2,0,0,0,0,3,0,3,0,3,0,0,0,1},
+  {1,0,0,0,0,0,2,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,1},
+  {1,0,0,0,0,0,2,0,0,0,2,0,0,0,0,3,0,0,0,3,0,0,0,1},
+  {1,0,0,0,0,0,2,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,1},
+  {1,0,0,0,0,0,2,2,0,2,2,0,0,0,0,3,0,3,0,3,0,0,0,1},
+  {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+  {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+  {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+  {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+  {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+  {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+  {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+  {1,4,4,4,4,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+  {1,4,0,4,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+  {1,4,0,0,0,0,5,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+  {1,4,0,4,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+  {1,4,0,4,4,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+  {1,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+  {1,4,4,4,4,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+  {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
+};
+
+int main(void) {
+    Vector2 pos = {22.0f, 12.0f}; // position 2D vector
+    Vector2 dir = {-1.0f, 0.0f}; // direction 2D vector
+    Vector2 plane = {0.0f, 0.66f}; // camera plane 2D vector
+    
+    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Raylib");
+
+    SetTargetFPS(TARGET_FPS);
+
+    while (!WindowShouldClose()) {
+        float dt = GetFrameTime();
+        float move_speed = dt * 5.0f;
+        float rotation_speed = dt * 3.0f;
+
+        // keyboard input via raylib
+        if (IsKeyDown(KEY_UP)) {
+            Vector2 move_dir = Vector2Scale(dir, move_speed);
+            if (world_map[(int)(pos.x + move_dir.x)][(int)(pos.y)] == 0) {
+                pos.x += move_dir.x;
+            }
+            if (world_map[(int)(pos.x)][(int)(pos.y + move_dir.y)] == 0) {
+                pos.y += move_dir.y;
+            }
+        }
+        if (IsKeyDown(KEY_DOWN)) {
+            Vector2 move_dir = Vector2Scale(dir, -move_speed);
+            if (world_map[(int)(pos.x + move_dir.x)][(int)(pos.y)] == 0) {
+                pos.x += move_dir.x;
+            }
+            if (world_map[(int)(pos.x)][(int)(pos.y + move_dir.y)] == 0) {
+                pos.y += move_dir.y;
+            }
+        }
+
+        if (IsKeyDown(KEY_RIGHT)) {
+            dir = Vector2Rotate(dir, -rotation_speed);
+            plane = Vector2Rotate(plane, -rotation_speed);
+        }
+
+        if (IsKeyDown(KEY_LEFT)) {
+            dir = Vector2Rotate(dir, rotation_speed);
+            plane = Vector2Rotate(plane, rotation_speed);
+        }
+
+        
+        BeginDrawing();
+        ClearBackground(DARKGRAY);
+
+        DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT / 2, GRAY);
+        DrawRectangle(0, SCREEN_HEIGHT / 2, SCREEN_WIDTH, SCREEN_HEIGHT / 2, DARKGRAY);
+        
+        for (int x = 0; x < SCREEN_WIDTH; ++x) {
+            float camera_x = 2.0f * x / (float)SCREEN_WIDTH - 1.0f;
+
+            Vector2 ray_dir = Vector2Add(dir, Vector2Scale(plane, camera_x));
+
+            int map_x = (int)pos.x;
+            int map_y = (int)pos.y;
+
+            Vector2 delta_dist = {
+                (ray_dir.x == 0) ? 1e30f : fabs(1.0f / ray_dir.x),
+                (ray_dir.y == 0) ? 1e30f : fabs(1.0f / ray_dir.y)
+            };
+
+            Vector2 side_dist;
+            int step_x, step_y;
+
+            if (ray_dir.x < 0) {
+                step_x = -1;
+                side_dist.x = (pos.x - map_x) * delta_dist.x;
+            } else {
+                step_x = 1;
+                side_dist.x = (map_x + 1.0f - pos.x) * delta_dist.x;
+            }
+            if (ray_dir.y < 0) {
+                step_y = -1;
+                side_dist.y = (pos.y - map_y) * delta_dist.y;
+            } else {
+                step_y = 1;
+                side_dist.y = (map_y + 1.0f - pos.y) * delta_dist.y;
+            }
+
+            int hit = 0;
+            int side;
+
+            // DDA algo
+            while (hit == 0) {
+                if (side_dist.x < side_dist.y) {
+                    side_dist.x += delta_dist.x;
+                    map_x += step_x;
+                    side = 0;
+                } else {
+                    side_dist.y += delta_dist.y;
+                    map_y += step_y;
+                    side = 1;
+                }
+                if (world_map[map_x][map_y] > 0) hit = 1;
+            }
+
+            float perp_wall_dist;
+
+            if (side == 0) {
+                perp_wall_dist = (side_dist.x - delta_dist.x);
+            } else {
+                perp_wall_dist = (side_dist.y - delta_dist.y);
+            }
+
+            int line_height = (int)(SCREEN_HEIGHT / perp_wall_dist);
+
+            int draw_start = -line_height / 2 + SCREEN_HEIGHT / 2;
+            if (draw_start < 0) draw_start = 0;
+            int draw_end = line_height / 2 + SCREEN_HEIGHT / 2;
+            if (draw_end >= SCREEN_HEIGHT) draw_end = SCREEN_HEIGHT - 1;
+
+            Color color;
+
+            switch (world_map[map_x][map_y]) {
+                case 1: color = RED; break;
+                case 2: color = GREEN; break;
+                case 3: color = BLUE; break;
+                case 4: color = WHITE; break;
+                default: color = YELLOW; break;
+            }
+
+            if (side == 1) {
+                color.r /= 2;
+                color.g /= 2;
+                color.b /= 2;
+            }
+
+            DrawLine(x, draw_start, x, draw_end, color);
+        }
+
+        DrawFPS(10, 10);
+        EndDrawing();
+    }
+    
+    CloseWindow();
+    
+    return 0;
+}
